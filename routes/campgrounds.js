@@ -1,7 +1,14 @@
 var express = require("express");
 var router = express.Router();
 var Campground = require("../models/campground");
-var middleware = require("../middleware"); 
+var middleware = require("../middleware"),
+    fs         = require('fs'),
+    path       = require('path'),
+    fs         = require('fs-extra');
+    multiparty = require('multiparty');
+
+const multipart = require('connect-multiparty');
+const multipartMiddleware = multipart();
 
 //INDEX - SHOW ALL CAMPGROUNDS
 router.get("/", function (req, res) {
@@ -13,37 +20,49 @@ router.get("/", function (req, res) {
             res.render("campgrounds/index", { campgrounds: allCampground });
         }
     });
-    // res.render("campgrounds",{campgrounds:campgrounds});
 });
+
 
 //CREATE ROUTE - ADD NEW CAMPGROUND TO DB
-router.post("/", middleware.isLoggedIn, function (req, res) {
-    // res.send("YOU HIT THE POST ROUTE");
+router.post("/", middleware.isLoggedIn, [multipartMiddleware, function (req, res) { 
+   // console.log(req);
 
-    //get data from form and add to the campgrounds array
-    var name = req.body.name;
-    var image = req.body.image;
-    var desc = req.body.description;
-    var author = {
-        id: req.user._id,
-        username: req.user.username
-    }
-    var newCampground = { name: name, image: image, description: desc, author: author }
-    // console.log(req.user);
-    // campgrounds.push(newCampground);
+    var path_temp = req.files.image.path;
+    var filename = req.files.image.name;
 
-    //Create a new campground and save to Db
-    Campground.create(newCampground, function(err, NewlyCreated) {
-        if (err) {
+    var form = new multiparty.Form();
+    var imagepath = basepath + '/public/upload/campgrounds/' + filename;
+    fs.move(path_temp, imagepath, function (err) {
+        if(err){    
             console.log(err);
         } else {
-            console.log(NewlyCreated);
-            res.redirect("/campgrounds");
+
+        //get data from form and add to the campgrounds array
+        var name = req.body.name;
+        var image = req.files.image.name;
+        var desc = req.body.description;
+        var author = {
+            id: req.user._id,
+            username: req.user.username
         }
+        var newCampground = { name: name, image: image, description: desc, author: author }
+        // console.log(req.user);
+        // campgrounds.push(newCampground);
+
+        //Create a new campground and save to Db
+        Campground.create(newCampground, function(err, NewlyCreated) {
+            if (err) {
+                console.log(err);
+            } else {
+                console.log(NewlyCreated);
+                res.redirect("/campgrounds");
+            }
+        });
+    }
     });
-    //also redirect to campgrounds page
-    // res.redirect("/campgrounds");
-});
+        //also redirect to campgrounds page
+        // res.redirect("/campgrounds");
+}]);
 
 //NEW ROUTE - SHOW A FORM TO CREATE NEW CAMPGROUND
 router.get("/new", middleware.isLoggedIn, function (req, res) {

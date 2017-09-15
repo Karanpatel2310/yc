@@ -9,7 +9,10 @@ var express       = require("express"),
     methodOverride = require("method-override"),
     LocalStrategy = require("passport-local"),
     User          = require("./models/user"),
-    flash         = require("connect-flash")
+    flash         = require("connect-flash");
+
+    global.basepath = __dirname;
+
 
 //Requiring Route
 var commentRoutes    = require("./routes/comments.js"),
